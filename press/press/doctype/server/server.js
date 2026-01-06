@@ -239,9 +239,16 @@ frappe.ui.form.on('Server', {
 			[__('Scale Up'), 'scale_up', true, !frm.doc.scaled_up],
 			[__('Scale Down'), 'scale_down', true, frm.doc.scaled_up],
 			[
-				__('Set Redis Password'),
-				'set_redis_password',
-				frm.doc.status === 'Active',
+				__('Install Wazuh Agent'),
+				'install_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall Wazuh Agent'),
+				'uninstall_wazuh_agent',
+				true,
+				frm.doc.is_server_setup,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

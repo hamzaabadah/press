@@ -23,6 +23,7 @@ from frappe.website.utils import build_response
 from pypika.terms import ValueWrapper
 
 from press.api.site import protected
+from press.guards import mfa
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -203,7 +204,15 @@ def setup_account(  # noqa: C901
 		# if this is a request from an invitation
 		# then Team already exists and will be added to that team
 		doc = frappe.get_doc("Team", team)
-		doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
+		doc.create_user_for_member(
+			first_name,
+			last_name,
+			email,
+			password,
+			role,
+			press_roles,
+			skip_validations=True,
+		)
 	else:
 		# Team doesn't exist, create it
 		Team.create_new(
@@ -702,41 +711,31 @@ def update_feature_flags(values=None):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
+@mfa.verify(user_key="email", raise_error=True)
 def send_reset_password_email(email: str):
-	valid_email = frappe.utils.validate_email_address(email)
-	if not valid_email:
-		frappe.throw(
-			f"{email} is not a valid email address",
-			frappe.InvalidEmailAddressError,
-		)
+	"""
+	Sends reset password email to the user.
+	"""
+	frappe.utils.validate_email_address(email, throw=True)
 
-	valid_email = valid_email.strip()
+	# Abort if user does not exist.
+	if not frappe.db.exists("User", email):
+		return
+
 	key = frappe.generate_hash()
-	hashed_key = sha256_hash(key)
-	if frappe.db.exists("User", valid_email):
-		frappe.db.set_value(
-			"User",
-			valid_email,
-			{
-				"reset_password_key": hashed_key,
-				"last_reset_password_key_generated_on": frappe.utils.now_datetime(),
-			},
-		)
-		url = get_url("/dashboard/reset-password/" + key)
-		if frappe.conf.developer_mode:
-			print(f"\nReset password URL for {valid_email}:")
-			print(url)
-			print()
-			return
-		frappe.sendmail(
-			recipients=valid_email,
-			subject="Reset Password",
-			template="reset_password",
-			args={"link": url},
-			now=True,
-		)
-	else:
-		frappe.throw(f"User {valid_email} does not exist")
+	url = get_url("/dashboard/reset-password/" + key)
+	frappe.db.set_value("User", email, "reset_password_key", sha256_hash(key))
+	frappe.db.set_value("User", email, "last_reset_password_key_generated_on", frappe.utils.now_datetime())
+
+	frappe.sendmail(
+		recipients=email,
+		subject="Reset Password",
+		template="reset_password",
+		args={
+			"link": url,
+		},
+		now=True,
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1203,6 +1202,10 @@ def get_permission_roles():
 			PressRole.allow_bench_creation,
 			PressRole.allow_server_creation,
 			PressRole.allow_webhook_configuration,
+			PressRole.allow_dashboard,
+			PressRole.allow_customer,
+			PressRole.allow_leads,
+			PressRole.allow_contribution,
 		)
 		.join(PressRoleUser)
 		.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))

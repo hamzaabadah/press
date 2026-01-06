@@ -48,9 +48,19 @@ export default {
 					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
+					label: 'Website Details',
+					route: { name: 'PartnerWebsiteDetails' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
+				},
+				{
 					label: 'Dashboard',
 					route: { name: 'PartnerDashboard' },
-					condition: () => Boolean(this.$team.doc.erpnext_partner),
+					condition: () =>
+						Boolean(
+							this.$team.doc.erpnext_partner &&
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerDashboardAccess,
+						),
 				},
 				{
 					label: 'Customers',
@@ -58,16 +68,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
-						),
-				},
-				{
-					label: 'Customer Approval Requests',
-					route: { name: 'PartnerApprovalRequests' },
-					condition: () =>
-						Boolean(
-							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerCustomerAccess,
 						),
 				},
 				{
@@ -76,11 +78,12 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerLeadsAccess,
 						),
 				},
 				{
-					label: 'Certificates',
+					label: 'Certifications',
 					route: { name: 'PartnerCertificates' },
 					condition: () =>
 						Boolean(
@@ -103,7 +106,8 @@ export default {
 					condition: () =>
 						Boolean(
 							this.$team.doc.erpnext_partner &&
-								this.$team.doc.partner_status === 'Active',
+								this.$team.doc.partner_status === 'Active' &&
+								this.$session.hasPartnerContributionAccess,
 						),
 				},
 				{
