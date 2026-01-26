@@ -7,7 +7,7 @@
 				{
 					label: 'Add App',
 					variant: 'solid',
-					disabled: (!appValidated && !selectedVersion) || !this.app.is_public,
+					disabled: !appValidated && !selectedVersion,
 					onClick: addApp,
 				},
 			],
@@ -53,8 +53,8 @@
 					<div v-else-if="this.app.is_public === false">
 						<div class="flex text-base text-gray-700 gap-1">
 							<FeatherIcon
-								class="w-4 p-0.5 text-white rounded bg-red-500"
-								name="x"
+								class="w-4 p-0.5 text-white rounded bg-gray-500"
+								name="lock"
 							/>
 							The Github Repository is private.
 							<Link
