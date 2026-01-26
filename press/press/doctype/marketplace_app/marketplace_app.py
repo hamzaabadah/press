@@ -171,7 +171,7 @@ class MarketplaceApp(WebsiteGenerator):
 				self.branch,
 				self.team,
 				self.github_installation_id,
-				public=True,
+				public=getattr(self, "is_public", True),
 			)
 			self.app = source.app
 			self.append("sources", {"version": self.version, "source": source.name})
